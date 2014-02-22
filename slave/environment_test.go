@@ -11,13 +11,11 @@ func TestEnvironment(t *testing.T) {
                 server  = "http://jenkins/server"
                 cwd     = "c:\\jenkins\\workspace"
                 name    = "slavename"
-                jarurl  = "http://jenkins/server/slave.jar"
         )
 
         os.Setenv("SLAVE_JENKINSSERVER", server)
         os.Setenv("SLAVE_JENKINSCWD", cwd)
         os.Setenv("SLAVE_NAME", name)
-        os.Setenv("SLAVE_JARURL", jarurl)
 
         if err := Environment(); err != nil {
                 t.Error(err)
@@ -31,8 +29,5 @@ func TestEnvironment(t *testing.T) {
         }
         if name != spec.Name {
                 t.Error("Expected ", name, " got ", spec.Name)
-        }
-        if jarurl != spec.Jarurl {
-                t.Error("Expected ", jarurl, " got ", spec.Jarurl)
         }
 }

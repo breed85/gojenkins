@@ -18,13 +18,12 @@ func (e fetchError) Error() string {
 
 type getter func(string) ([]byte, error)
 
-var SLAVEFILE = "slave.jar"
-
 func fetch() error {
         return fetchfn(get)
 }
 
 func fetchfn(fn getter) error {
+        jarUrl := fmt.Sprintf("%s/jnlpJars/slave.jar", spec.Jenkinsserver)
 
         // Create destination file, replacing it if it exists
         f, err := os.Create(SLAVEFILE)
@@ -34,7 +33,7 @@ func fetchfn(fn getter) error {
         defer f.Close()
 
         // Read slave.jar content
-        content, err := fn(spec.Jarurl)
+        content, err := fn(jarUrl)
         if err != nil {
                 return fetchError{"Failed to read response", err}
         }

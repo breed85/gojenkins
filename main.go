@@ -2,7 +2,6 @@ package main
 
 import (
         "flag"
-        //"fmt"
         "log"
         "os"
         "stash.jda.com/scm/~j1014191/gojenkins/slave"

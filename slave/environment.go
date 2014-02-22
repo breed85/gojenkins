@@ -8,7 +8,6 @@ type Spec struct {
         Jenkinsserver string
         Jenkinscwd    string
         Name          string
-        Jarurl        string
 }
 
 var spec Spec
