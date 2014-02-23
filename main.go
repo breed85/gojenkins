@@ -8,34 +8,50 @@ import (
         "stash.jda.com/scm/~j1014191/gojenkins/slave"
 )
 
+var exitCode = 0
+
+func exit() {
+        os.Exit(exitCode)
+}
+
 func main() {
+        defer exit()
+
         lockFile := flag.Bool("lock", false, "create a lock file during execution")
         flag.Usage = usage
         flag.Parse()
 
         // Load the environment
         if err := slave.Environment(); err != nil {
-                log.Fatal(err)
-                os.Exit(2)
+                log.Print(err)
+                exitCode = 2
+                return
         }
 
         // If a lock file is desired, create it and defer the unlock
         if *lockFile {
                 l, err := slave.NewLock()
+
                 if err != nil {
-                        log.Fatalf("Unable to create lock file: %s", err)
-                        os.Exit(2)
+                        log.Printf("Unable to create lock file: %s", err)
+                        exitCode = 2
+                        return
                 }
+                // Defer unlocking. This will happen before exit due to LIFO stack of defer statements.
                 defer func() {
-                        // Remove the lock file on execution completion
                         removeerr := l.Unlock()
                         if removeerr != nil {
-                                log.Fatalf("Failed to remove lock %s", l.Name())
+                                log.Fatal("Failed to remove lock %s", l.Name())
                         }
                 }()
         }
 
-        slave.Run()
+        if err := slave.Run(); err != nil {
+                // Unexpected error
+                log.Print(err)
+                exitCode = 2
+                return
+        }
 }
 
 func usage() {
