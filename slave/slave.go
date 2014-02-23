@@ -10,20 +10,20 @@ import (
 
 // Run will move execution to the Jenkins working directory as defined in the environment. It will then
 // start the Jenkins slave after downloading a new slave jar file from the master.
-func Run() error {
+func Run(res chan<- error) {
         // Change to jenkins directory
         if err := os.Chdir(spec.Jenkinscwd); err != nil {
-                return err
+                res <- err
         }
 
         // Attempt to fetch the slave.jar file
         if err := fetch(); err != nil {
-                return err
+                res <- err
         }
 
         runslave()
 
-        return nil
+        res <- nil
 }
 
 const (

@@ -5,6 +5,7 @@ import (
         "fmt"
         "log"
         "os"
+        "os/signal"
         "stash.jda.com/scm/~j1014191/gojenkins/slave"
 )
 
@@ -16,6 +17,16 @@ func exit() {
 
 func main() {
         defer exit()
+
+        // Set up channel on which to send signal notifications.
+        // We must use a buffered channel or risk missing the signal
+        // if we're not ready to receive when the signal is sent.
+        signalChan := make(chan os.Signal, 1)
+        signal.Notify(signalChan, os.Interrupt)
+
+        // quit will be used to allow us to exit on SIGINT or normal completion.
+        quit := make(chan bool, 1)
+        runError := make(chan error, 1)
 
         lockFile := flag.Bool("lock", false, "create a lock file during execution")
         flag.Usage = usage
@@ -37,20 +48,35 @@ func main() {
                         exitCode = 2
                         return
                 }
+
                 // Defer unlocking. This will happen before exit due to LIFO stack of defer statements.
                 defer func() {
-                        removeerr := l.Unlock()
-                        if removeerr != nil {
-                                log.Fatal("Failed to remove lock %s", l.Name())
+                        if err := l.Unlock(); nil != err && !os.IsNotExist(err) {
+                                log.Fatalf("Failed to remove lock %s: %s", l.Name(), err)
                         }
+                }()
+
+                // Ensure the lock will be deleted on a signal from the OS
+                go func() {
+                        <-signalChan
+                        signal.Stop(signalChan)
+                        quit <- true
                 }()
         }
 
-        if err := slave.Run(); err != nil {
-                // Unexpected error
-                log.Print(err)
-                exitCode = 2
-                return
+        // Launch the slave
+        go slave.Run(runError)
+
+        // Wait for the slave to complete or a signal to quit.
+        select {
+        case e := <-runError:
+                if nil != e {
+                        // Unexpected error
+                        log.Print(e)
+                        exitCode = 2
+                        return
+                }
+        case <-quit:
         }
 }
 
