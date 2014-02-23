@@ -30,18 +30,18 @@ func fetch() error {
 func fetchfn(fn getter) error {
         jarUrl := fmt.Sprintf("%s/jnlpJars/slave.jar", spec.Jenkinsserver)
 
-        // Create destination file, replacing it if it exists
-        f, err := os.Create(SLAVEFILE)
-        if err != nil {
-                return fetchError{"Error creating slave jar", err}
-        }
-        defer f.Close()
-
         // Read slave.jar content
         content, err := fn(jarUrl)
         if err != nil {
                 return fetchError{"Failed to read response", err}
         }
+
+        // Create destination file, replacing it if it exists
+        f, err := os.Create(SLAVEFILE)
+        if err != nil {
+                return fetchError{"Error creating slave.jar", err}
+        }
+        defer f.Close()
 
         // Write slave.jar
         if _, err := f.Write(content); err != nil {
