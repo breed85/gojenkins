@@ -18,10 +18,15 @@ func (e fetchError) Error() string {
 
 type getter func(string) ([]byte, error)
 
+// fetch is the main entry point for fetching the slave.jar.
 func fetch() error {
         return fetchfn(get)
 }
 
+// fetchfn retrieves the slave.jar from the jenkins master.
+// To support testing, the function accepts a getter that will be called to retrieve
+// the content of the slave file. For testing purposes, a mock getter can be passed
+// without the need to setup a mock http server.
 func fetchfn(fn getter) error {
         jarUrl := fmt.Sprintf("%s/jnlpJars/slave.jar", spec.Jenkinsserver)
 
@@ -46,6 +51,8 @@ func fetchfn(fn getter) error {
         return nil
 }
 
+// get retrieves the content at the specified URL. The content will be returned as a []byte.
+// If an error occurs it will be passed back to the caller.
 func get(url string) ([]byte, error) {
         resp, err := http.Get(url)
         if err != nil {
