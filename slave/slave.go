@@ -40,7 +40,7 @@ const (
 // runslave starts the jenkins slave in a loop. It will retry INIT_ATTEMPTS times if the slave
 // doesn't run for at least MIN_EXEC_TIME.
 func runslave() {
-        jnlp := fmt.Sprintf("%s/computer/%s/slave-agent.jnlp")
+        jnlp := fmt.Sprintf("%s/computer/%s/slave-agent.jnlp", spec.Jenkinsserver, spec.Name)
 
         attempts := INIT_ATTEMPTS
         sleep := INIT_SLEEP
