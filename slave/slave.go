@@ -3,34 +3,31 @@ package slave
 
 import (
         "fmt"
-        "log"
         "os"
         "os/exec"
         "time"
 )
 
-var logger *log.Logger
-
-func init() {
-        logger = log.New(os.Stderr, "Slave: ", log.Ldate|log.Ltime|log.Lshortfile)
-}
-
 // Run will move execution to the Jenkins working directory as defined in the environment. It will then
 // start the Jenkins slave after downloading a new slave jar file from the master.
-func Run() {
+func Run() error {
         // Change to jenkins directory
         if err := os.Chdir(spec.Jenkinscwd); err != nil {
-                logger.Fatal(err)
-                os.Exit(2)
+                return err
         }
 
-        fetch()
+        // Attempt to fetch the slave.jar file
+        if err := fetch(); err != nil {
+                return err
+        }
 
         runslave()
+
+        return nil
 }
 
 const (
-                INIT_ATTEMPTS = 20              // # of times to run the slave
+        INIT_ATTEMPTS = 20              // # of times to run the slave
         INIT_SLEEP    = 2 * time.Second // initial delay between attempts
         MAX_SLEEP     = 5 * time.Minute // max delay between attempts
         MIN_EXEC_TIME = 5 * time.Minute // minimum execution time
@@ -54,6 +51,8 @@ func runslave() {
                         "-jnlpUrl",
                         jnlp,
                 )
+
+                cmd.Stderr = logger
 
                 // Start a timer to determine how long it has run for.
                 start := time.Now()
