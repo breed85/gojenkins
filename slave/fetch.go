@@ -13,7 +13,11 @@ type fetchError struct {
 }
 
 func (e fetchError) Error() string {
-        return fmt.Sprintf("%s: %s", e.message, e.err)
+        message := e.message
+        if e.err != nil {
+                message = fmt.Sprintf("%s: %s", message, e.err)
+        }
+        return message
 }
 
 type getter func(string) ([]byte, error)
@@ -57,6 +61,8 @@ func get(url string) ([]byte, error) {
         resp, err := http.Get(url)
         if err != nil {
                 return nil, err
+        } else if resp.StatusCode != http.StatusOK {
+                return nil, fetchError{fmt.Sprintf("%d: %s", resp.StatusCode, resp.Status), nil}
         }
         defer resp.Body.Close()
 
