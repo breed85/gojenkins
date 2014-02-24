@@ -24,8 +24,10 @@ func main() {
         signalChan := make(chan os.Signal, 1)
         signal.Notify(signalChan, os.Interrupt)
 
-        // quit will be used to allow us to exit on SIGINT or normal completion.
+        // quit will be used to allow us to exit on SIGINT.
         quit := make(chan bool, 1)
+
+        // runError will be used to notify of any errors that occur while running the slave.
         runError := make(chan error, 1)
 
         lockFile := flag.Bool("lock", false, "create a lock file during execution")
@@ -42,7 +44,6 @@ func main() {
         // If a lock file is desired, create it and defer the unlock
         if *lockFile {
                 l, err := slave.NewLock()
-
                 if err != nil {
                         log.Printf("Unable to create lock file: %s", err)
                         exitCode = 2
@@ -56,9 +57,13 @@ func main() {
                         }
                 }()
 
-                // Ensure the lock will be deleted on a signal from the OS
+                // Ensure the lock will be deleted on a signal from the OS by quiting on SIGINT.
+                // The deferred function above will be able to execute to delete the file.
                 go func() {
+                        // Block until a signal is cauught
                         <-signalChan
+                        // Remove our channel from listening to the signal. Subsequent signals will
+                        // return to the normal handler.
                         signal.Stop(signalChan)
                         quit <- true
                 }()
