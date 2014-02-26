@@ -1,12 +1,14 @@
-all: win linux
+all: test win64 linux64
 
-WIN64=${GOPATH}/bin/windows/amd64
-LINUX64=${GOPATH}/bin/linux/amd64
+BIN=${GOPATH}/bin
 
-win:
-	mkdir -p $(WIN64)
-	GOOS=windows GOARCH=amd64 go build -o $(WIN64)/gojenkins.exe
+test:
+	go test stash.jda.com/scm/~j1014191/gojenkins/slave
 
-linux:
-	mkdir -p $(LINUX64)
-	GOOS=linux GOARCH=amd64 go build -o $(LINUX64)/gojenkins
+win64:
+	mkdir -p $(BIN)
+	GOOS=windows GOARCH=amd64 go build -o $(BIN)/gojenkins-windows-x64.exe
+
+linux64:
+	mkdir -p $(BIN)
+	GOOS=linux GOARCH=amd64 go build -o $(BIN)/gojenkins-linux-x64
