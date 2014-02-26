@@ -15,7 +15,7 @@ func NewLock() (*LockFile, error) {
         name := fmt.Sprintf("%s.lock", spec.Name)
 
         // Move the Jenkins working directory
-        if err := os.Chdir(spec.Jenkinscwd); err != nil {
+        if err := os.Chdir(spec.Home); err != nil {
                 return nil, err
         }
 

@@ -6,6 +6,7 @@ import (
         "net/http"
         "net/http/httptest"
         "os"
+        "os/exec"
         "testing"
 )
 
@@ -31,22 +32,47 @@ func mockGet(url string) ([]byte, error) {
         return []byte(fetch_data), nil
 }
 
+type testFetcher struct{}
+
+func (f *testFetcher) Url() string {
+        return "http://test/"
+}
+
+func (f *testFetcher) File() string {
+        return "test_fetch0123.txt"
+}
+
+func (f *testFetcher) Overwrite() bool {
+        return true
+}
+
+func (f *testFetcher) Command() *exec.Cmd {
+        return nil
+}
+
 func TestFetchfn(t *testing.T) {
+        // Setup environment
+        os.Clearenv()
+        Environment()
+        fetcher := &testFetcher{}
 
-        fetchfn(mockGet)
+        // Test
+        fetchfn(mockGet, fetcher)
 
-        f, err := os.Open(SLAVEFILE)
+        f, err := os.Open(fetcher.File())
         if os.IsNotExist(err) {
                 t.Error(err)
         }
         defer f.Close()
-        defer os.Remove(SLAVEFILE)
+        defer os.Remove(fetcher.File())
 
         content, err := ioutil.ReadAll(f)
         if string(content) != fetch_data {
                 t.Errorf("Expected: %s  Got: %s", fetch_data, string(content))
         }
 
+        // Cleanup
+        spec = nil
 }
 
 func TestGet(t *testing.T) {

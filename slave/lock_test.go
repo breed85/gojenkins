@@ -6,10 +6,15 @@ import (
 )
 
 func TestLock(t *testing.T) {
-        os.Setenv(ENV_NAME, name)
-        os.Setenv(ENV_JENKINSCWD, ".")
+        // Setup
+        os.Clearenv()
+        os.Setenv(ENV_NAME, "host")
+        os.Setenv(ENV_HOME, ".")
+        // Clear package variable spec to ensure our Env is picked up.
+        spec = nil
         Environment()
 
+        // Test lock creation
         f, err := NewLock()
         if err != nil {
                 t.Error(err)
@@ -21,6 +26,10 @@ func TestLock(t *testing.T) {
                 t.Log("Failed to create file")
                 t.Fail()
         }
+
+        // Cleanup
+        os.Clearenv()
+        spec = nil
 }
 
 func TestUnlock(t *testing.T) {

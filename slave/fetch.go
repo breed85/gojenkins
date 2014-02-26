@@ -23,33 +23,33 @@ func (e fetchError) Error() string {
 type getter func(string) ([]byte, error)
 
 // fetch is the main entry point for fetching the slave.jar.
-func fetch() error {
-        return fetchfn(get)
+func fetch(c Connector) error {
+        return fetchfn(get, c)
 }
 
-// fetchfn retrieves the slave.jar from the jenkins master.
-// To support testing, the function accepts a getter that will be called to retrieve
-// the content of the slave file. For testing purposes, a mock getter can be passed
-// without the need to setup a mock http server.
-func fetchfn(fn getter) error {
-        jarUrl := fmt.Sprintf("%s/jnlpJars/slave.jar", spec.Jenkinsserver)
+// fetchfn TODO
+func fetchfn(fn getter, c Connector) error {
+        // Get out if we are not going to overwrite and the file already exists.
+        if _, err := os.Stat(c.File()); !c.Overwrite() && !os.IsNotExist(err) {
+                return nil
+        }
 
-        // Read slave.jar content
-        content, err := fn(jarUrl)
+        // Read content
+        content, err := fn(c.Url())
         if err != nil {
                 return fetchError{"Failed to read response", err}
         }
 
         // Create destination file, replacing it if it exists
-        f, err := os.Create(SLAVEFILE)
+        file, err := os.Create(c.File())
         if err != nil {
-                return fetchError{"Error creating slave.jar", err}
+                return fetchError{fmt.Sprintf("Error creating %s", c.File()), err}
         }
-        defer f.Close()
+        defer file.Close()
 
         // Write slave.jar
-        if _, err := f.Write(content); err != nil {
-                return fetchError{"Failed to write slave.jar", err}
+        if _, err := file.Write(content); err != nil {
+                return fetchError{fmt.Sprintf("Failed to write %s", c.File()), err}
         }
 
         return nil
@@ -58,11 +58,12 @@ func fetchfn(fn getter) error {
 // get retrieves the content at the specified URL. The content will be returned as a []byte.
 // If an error occurs it will be passed back to the caller.
 func get(url string) ([]byte, error) {
+        logger.Printf("GET %s", url)
         resp, err := http.Get(url)
         if err != nil {
                 return nil, err
         } else if resp.StatusCode != http.StatusOK {
-                return nil, fetchError{fmt.Sprintf("%d: %s", resp.StatusCode, resp.Status), nil}
+                return nil, fetchError{fmt.Sprintf("%s Resp: %s", url, resp.Status), err}
         }
         defer resp.Body.Close()
 

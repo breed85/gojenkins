@@ -2,60 +2,61 @@
 package slave
 
 import (
-        "fmt"
         "os"
         "os/exec"
+        "strings"
         "time"
 )
 
-// Run will move execution to the Jenkins working directory as defined in the environment. It will then
-// start the Jenkins slave after downloading a new slave jar file from the master.
-func Run(res chan<- error) {
+type Connector interface {
+        Url() string
+        File() string
+        Overwrite() bool
+        Command() *exec.Cmd
+}
+
+// Run will move execution to the Jenkins working directory as defined in the environment.
+// Fetch the file for the connector and run the slave.
+func Run(c Connector, res chan<- error) {
         // Change to jenkins directory
-        if err := os.Chdir(spec.Jenkinscwd); err != nil {
+        if err := os.Chdir(spec.Home); err != nil {
                 res <- err
+                return
         }
 
-        // Attempt to fetch the slave.jar file
-        if err := fetch(); err != nil {
+        // Attempt to fetch the connector's file
+        if err := fetch(c); err != nil {
                 res <- err
+                return
         }
 
-        runslave()
+        // Run the connector
+        runslave(c)
 
         res <- nil
 }
 
 const (
-        INIT_ATTEMPTS = 20              // # of times to run the slave
+        INIT_ATTEMPTS = 10              // # of times to run the slave
         INIT_SLEEP    = 2 * time.Second // initial delay between attempts
         MAX_SLEEP     = 5 * time.Minute // max delay between attempts
         MIN_EXEC_TIME = 5 * time.Minute // minimum execution time
-        SLAVEFILE     = "slave.jar"     // Jenkins slave file that will be downloaded from the master.
 )
 
 // runslave starts the jenkins slave in a loop. It will retry INIT_ATTEMPTS times if the slave
 // doesn't run for at least MIN_EXEC_TIME.
-func runslave() {
-        jnlp := fmt.Sprintf("%s/computer/%s/slave-agent.jnlp", spec.Jenkinsserver, spec.Name)
-
+func runslave(c Connector) {
         attempts := INIT_ATTEMPTS
         sleep := INIT_SLEEP
 
         for {
                 // Setup the command to start Jenkins
-                cmd := exec.Command(
-                        "java",
-                        "-jar",
-                        SLAVEFILE,
-                        "-jnlpUrl",
-                        jnlp,
-                )
-
+                cmd := c.Command()
                 cmd.Stderr = logger
 
                 // Start a timer to determine how long it has run for.
                 start := time.Now()
+                logger.Printf("Executing %s", strings.Join(cmd.Args, " "))
                 if err := cmd.Run(); err != nil {
                         logger.Println(err)
                 }

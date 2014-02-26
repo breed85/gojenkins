@@ -2,70 +2,97 @@ package slave
 
 import (
         "os"
+        "strconv"
         "testing"
 )
 
-var (
-        server  = "http://jenkins/server"
-        cwd     = "c:\\jenkins\\workspace"
-        name    = "slavename"
-)
-
 func TestEnvironment(t *testing.T) {
+        var (
+                server       = "http://jenkins/server"
+                home         = "c:\\jenkins\\workspace"
+                name         = "slavename"
+                username     = "jenkins-slave"
+                password     = "pass"
+                swarm        = true
+                swarmversion = "1.16"
+                lock         = true
+                executors    = 4
+                mode         = "exclusive"
+                labels       = "label1 label2"
+        )
+
+        // Test defaults
+        os.Clearenv()
+        s, err := Environment()
+        if nil != err {
+                t.Error(err)
+        }
+
+        host, _ := os.Hostname()
+        dir, _ := os.Getwd()
+
+        expectString(t, host, s.Name)
+        expectString(t, dir, s.Home)
+        expectBool(t, false, s.Swarm)
+        expectBool(t, false, s.Lock)
+        expectString(t, "1.15", s.Swarmversion)
+        expectInt(t, 2, s.Executors)
+        expectString(t, "normal", s.Mode)
+
         // Setup fake environment
-
-        os.Setenv(ENV_JENKINSSERVER, server)
-        os.Setenv(ENV_JENKINSCWD, cwd)
+        os.Clearenv()
+        spec = nil
+        os.Setenv(ENV_SERVER, server)
+        os.Setenv(ENV_HOME, home)
         os.Setenv(ENV_NAME, name)
+        os.Setenv(ENV_USERNAME, username)
+        os.Setenv(ENV_PASSWORD, password)
+        os.Setenv(ENV_SWARM, strconv.FormatBool(swarm))
+        os.Setenv(ENV_SWARMVERSION, swarmversion)
+        os.Setenv(ENV_LOCK, strconv.FormatBool(lock))
+        os.Setenv(ENV_EXECUTORS, strconv.Itoa(executors))
+        os.Setenv(ENV_MODE, mode)
+        os.Setenv(ENV_LABELS, labels)
 
-        if err := Environment(); err != nil {
+        s, err = Environment()
+        if nil != err {
                 t.Error(err)
         }
 
-        if server != spec.Jenkinsserver {
-                t.Error("Expected ", server, " got ", spec.Jenkinsserver)
-        }
-        if cwd != spec.Jenkinscwd {
-                t.Error("Expected ", cwd, " got ", spec.Jenkinscwd)
-        }
-        if name != spec.Name {
-                t.Error("Expected ", name, " got ", spec.Name)
+        expectString(t, server, s.Server)
+        expectString(t, home, s.Home)
+        expectString(t, name, s.Name)
+        expectString(t, username, s.Username)
+        expectString(t, password, s.Password)
+        expectBool(t, swarm, s.Swarm)
+        expectString(t, swarmversion, s.Swarmversion)
+        expectBool(t, lock, s.Lock)
+        expectInt(t, executors, s.Executors)
+        expectString(t, mode, s.Mode)
+        expectString(t, labels, s.Labels)
+
+        // Cleanup
+        spec = nil
+        os.Clearenv()
+}
+
+func expectString(t *testing.T, exp, act string) {
+        if exp != act {
+                t.Logf("Expected: %s, Got: %s", exp, act)
+                t.Fail()
         }
 }
 
-func TestGetJenkinsServer(t *testing.T) {
-        testGetS(t, GetJenkinsServer, ENV_JENKINSSERVER, server)
-}
-
-func TestGetJenkinsCwd(t *testing.T) {
-        testGetS(t, GetJenkinsCwd, ENV_JENKINSCWD, cwd)
-}
-
-func TestGetJenkinsName(t *testing.T) {
-        testGetS(t, GetName, ENV_NAME, name)
-}
-
-type gets func() string
-
-func testGetS(t *testing.T, fn gets, env string, exp string) {
-        // Uninitialed value
-        spec = Spec{}
-        v := fn()
-
-        if len(v) != 0 {
-                t.Errorf("Expected nil value, but got %s", v)
+func expectBool(t *testing.T, exp, act bool) {
+        if exp != act {
+                t.Logf("Expected: %s, Got: %s", exp, act)
+                t.Fail()
         }
+}
 
-        // Initiated value
-        os.Setenv(env, exp)
-
-        if err := Environment(); err != nil {
-                t.Error(err)
-        }
-
-        v = fn()
-
-        if v != exp {
-                t.Errorf("Expected: %s, but got %s", exp, v)
+func expectInt(t *testing.T, exp, act int) {
+        if exp != act {
+                t.Logf("Expected: %d, Got: %d", exp, act)
+                t.Fail()
         }
 }
