@@ -6,6 +6,7 @@ import (
         "strconv"
 )
 
+// Swarm is an object that represents a Jenkins swarm client connector for connecting to a Jenkins master.
 type Swarm struct{}
 
 func (s *Swarm) Url() string {

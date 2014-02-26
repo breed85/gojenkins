@@ -5,6 +5,7 @@ import (
         "os/exec"
 )
 
+// Jnlp struct represents a Jnlp connector to a Jenkins master.
 type Jnlp struct{}
 
 func (j *Jnlp) Url() string {

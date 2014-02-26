@@ -68,6 +68,18 @@ var spec *Spec
 
 // Environment will read in the environment as defined in Spec. All environment variables will be
 // prefixed with "SLAVE_".
+// If values are not set in the envorinment, the following defaults will be used:
+//                host, _ := os.Hostname()
+//                dir, _ := os.Getwd()
+//                spec = &Spec{
+//                        Name:         host,
+//                        Home:         dir,
+//                        Swarm:        false,
+//                        Lock:         false,
+//                        Swarmversion: "1.15",
+//                        Executors:    2,
+//                        Mode:         "normal",
+//                }
 func Environment() (*Spec, error) {
         var err error
         if spec == nil {
@@ -97,12 +109,11 @@ func Environment() (*Spec, error) {
         return spec, err
 }
 
+// ValidMode returns true if the mode is 'normal' or 'exclusive'.
 func (s *Spec) ValidMode() (res bool) {
         res = false
-        if spec != nil {
-                if m := strings.ToLower(s.Mode); m == "normal" || m == "exclusive" {
-                        res = true
-                }
+        if m := strings.ToLower(s.Mode); m == "normal" || m == "exclusive" {
+                res = true
         }
         return
 }

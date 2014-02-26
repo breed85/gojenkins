@@ -8,10 +8,19 @@ import (
         "time"
 )
 
+// Connector interface describes a slave that can be run via the Run command.
 type Connector interface {
+        // Url returns the URL to retrieve the file needed to run the slave such as a JAR file.
         Url() string
+
+        // File returns the name of the file that will be created from the content at Url().
         File() string
+
+        // Overwrite returns a bool. True indicates that the File() should be overwritten with each execution.
+        // False indicates that the File() should be reused on each execution.
         Overwrite() bool
+
+        // Command builds an exec.Cmd object that will be run to start the slave.
         Command() *exec.Cmd
 }
 
