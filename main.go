@@ -125,4 +125,5 @@ func (f *flags) Load() {
         flag.StringVar(&f.Name, "name", f.Name, "\n\tName of the host on Jenkins. When used with -swarm, the name will be used to create a node.\n\tOtherwise, the node [name] must exist on the master already.\n")
         flag.StringVar(&f.Mode, "mode", f.Mode, "\n\tMode to set for the slave node. Valid values are 'normal' (utilize the slave as much as possible)\n\tor 'exclusive' (leave this machine for tied jobs only). Requires -swarm\n")
         flag.StringVar(&f.Labels, "labels", f.Labels, "\n\tLabels to apply to the node. Requires -swarm. Can be a space separated list.\n")
+        flag.IntVar(&f.Executors, "executors", f.Executors, "\n\tNumber of executors to use for the node. Requires -swarm\n")
 }
