@@ -30,6 +30,7 @@ func NewLock() (*LockFile, error) {
 
 // Unlock removes the lock file
 func (l *LockFile) Unlock() error {
+        l.Close()
         err := os.Remove(l.Name())
         return err
 }
