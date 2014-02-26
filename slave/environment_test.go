@@ -39,7 +39,7 @@ func TestEnvironment(t *testing.T) {
         expectInt(t, 2, s.Executors)
         expectString(t, "normal", s.Mode)
 
-        // Setup fake environment
+        // Test changed values
         os.Clearenv()
         spec = nil
         os.Setenv(ENV_SERVER, server)
@@ -70,6 +70,18 @@ func TestEnvironment(t *testing.T) {
         expectInt(t, executors, s.Executors)
         expectString(t, mode, s.Mode)
         expectString(t, labels, s.Labels)
+
+        // Test mode wrong
+        os.Clearenv()
+        spec = nil
+        os.Setenv(ENV_MODE, "wrong")
+
+        s, err = Environment()
+        if nil != err {
+                t.Error(err)
+        }
+
+        expectString(t, "normal", s.Mode)
 
         // Cleanup
         spec = nil

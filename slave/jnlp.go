@@ -8,7 +8,7 @@ import (
 type Jnlp struct{}
 
 func (j *Jnlp) Url() string {
-        return fmt.Sprintf("%s/jnlpjars/%s", j.File())
+        return fmt.Sprintf("%s/jnlpjars/%s", spec.Server, j.File())
 }
 
 func (j *Jnlp) File() string {

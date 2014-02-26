@@ -32,6 +32,10 @@ func mockGet(url string) ([]byte, error) {
         return []byte(fetch_data), nil
 }
 
+func mockGetErr(url string) ([]byte, error) {
+        return nil, mockError{2}
+}
+
 type testFetcher struct{}
 
 func (f *testFetcher) Url() string {
@@ -43,7 +47,7 @@ func (f *testFetcher) File() string {
 }
 
 func (f *testFetcher) Overwrite() bool {
-        return true
+        return false
 }
 
 func (f *testFetcher) Command() *exec.Cmd {
@@ -56,7 +60,13 @@ func TestFetchfn(t *testing.T) {
         Environment()
         fetcher := &testFetcher{}
 
-        // Test
+        // Test get error
+        if err := fetchfn(mockGetErr, fetcher); nil == err {
+                t.Parallel()
+                t.Fail()
+        }
+
+        // Test file retrieval
         fetchfn(mockGet, fetcher)
 
         f, err := os.Open(fetcher.File())
@@ -69,6 +79,11 @@ func TestFetchfn(t *testing.T) {
         content, err := ioutil.ReadAll(f)
         if string(content) != fetch_data {
                 t.Errorf("Expected: %s  Got: %s", fetch_data, string(content))
+        }
+
+        // Test overwrite skip
+        if err = fetchfn(mockGet, fetcher); nil != err {
+                t.Fail()
         }
 
         // Cleanup
