@@ -5,7 +5,7 @@ import (
 )
 
 func TestJnlpUrl(t *testing.T) {
-        env, _ := Environment()
+        env, _ := NewSpec().Environment()
         env.Server = "http://test"
         j := &Jnlp{}
         s := j.Url()
@@ -31,7 +31,7 @@ func TestJnlpOverwrite(t *testing.T) {
 }
 
 func TestJnlpCommand(t *testing.T) {
-        env, _ := Environment()
+        env, _ := NewSpec().Environment()
         env.Server = "http://test"
         env.Name = "testname"
 

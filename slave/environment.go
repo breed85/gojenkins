@@ -64,11 +64,39 @@ const (
         ENV_LABELS       = "SLAVE_LABELS"       // Environment variable
 )
 
-var spec *Spec
+var spec *Spec = nil
 
 // Environment will read in the environment as defined in Spec. All environment variables will be
 // prefixed with "SLAVE_".
-// If values are not set in the envorinment, the following defaults will be used:
+func (s *Spec) Environment() (*Spec, error) {
+        err := envconfig.Process("slave", s)
+
+        if !s.ValidMode() {
+                logger.Printf(
+                        "Invalid value for mode [%s]. Valid values are normal and exclusive. Setting to normal.",
+                        s.Mode,
+                )
+                s.Mode = "normal"
+        }
+
+        return s, err
+}
+
+// File reads the spec from the file listed as the argument.
+func (s *Spec) File(name string) (*Spec, error) {
+        return nil, nil
+}
+
+// ValidMode returns true if the mode is 'normal' or 'exclusive'.
+func (s *Spec) ValidMode() (res bool) {
+        res = false
+        if m := strings.ToLower(s.Mode); m == "normal" || m == "exclusive" {
+                res = true
+        }
+        return
+}
+
+// New creates a new instance of the environment spec. The following defaults will be used:
 //                host, _ := os.Hostname()
 //                dir, _ := os.Getwd()
 //                spec = &Spec{
@@ -80,8 +108,7 @@ var spec *Spec
 //                        Executors:    2,
 //                        Mode:         "normal",
 //                }
-func Environment() (*Spec, error) {
-        var err error
+func NewSpec() *Spec {
         if spec == nil {
                 // Set some defaults
                 host, _ := os.Hostname()
@@ -95,25 +122,6 @@ func Environment() (*Spec, error) {
                         Executors:    2,
                         Mode:         "normal",
                 }
-                err = envconfig.Process("slave", spec)
-
-                if !spec.ValidMode() {
-                        logger.Printf(
-                                "Invalid value for mode [%s]. Valid values are normal and exclusive. Setting to normal.",
-                                spec.Mode,
-                        )
-                        spec.Mode = "normal"
-                }
-
         }
-        return spec, err
-}
-
-// ValidMode returns true if the mode is 'normal' or 'exclusive'.
-func (s *Spec) ValidMode() (res bool) {
-        res = false
-        if m := strings.ToLower(s.Mode); m == "normal" || m == "exclusive" {
-                res = true
-        }
-        return
+        return spec
 }

@@ -57,7 +57,7 @@ func (f *testFetcher) Command() *exec.Cmd {
 func TestFetchfn(t *testing.T) {
         // Setup environment
         os.Clearenv()
-        Environment()
+        NewSpec().Environment()
         fetcher := &testFetcher{}
 
         // Test get error

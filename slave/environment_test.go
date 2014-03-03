@@ -23,7 +23,7 @@ func TestEnvironment(t *testing.T) {
 
         // Test defaults
         os.Clearenv()
-        s, err := Environment()
+        s, err := NewSpec().Environment()
         if nil != err {
                 t.Error(err)
         }
@@ -54,7 +54,7 @@ func TestEnvironment(t *testing.T) {
         os.Setenv(ENV_MODE, mode)
         os.Setenv(ENV_LABELS, labels)
 
-        s, err = Environment()
+        s, err = NewSpec().Environment()
         if nil != err {
                 t.Error(err)
         }
@@ -76,7 +76,7 @@ func TestEnvironment(t *testing.T) {
         spec = nil
         os.Setenv(ENV_MODE, "wrong")
 
-        s, err = Environment()
+        s, err = NewSpec().Environment()
         if nil != err {
                 t.Error(err)
         }

@@ -22,7 +22,7 @@ func (s *Swarm) Overwrite() bool {
 }
 
 func (s *Swarm) Command() *exec.Cmd {
-        env, _ := Environment()
+        env, _ := NewSpec().Environment()
 
         args := []string{"-jar", s.File()}
 

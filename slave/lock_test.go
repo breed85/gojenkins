@@ -12,7 +12,7 @@ func TestLock(t *testing.T) {
         os.Setenv(ENV_HOME, ".")
         // Clear package variable spec to ensure our Env is picked up.
         spec = nil
-        Environment()
+        NewSpec().Environment()
 
         // Test lock creation
         f, err := NewLock()

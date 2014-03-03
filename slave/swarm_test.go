@@ -5,7 +5,7 @@ import (
 )
 
 func TestSwarmUrl(t *testing.T) {
-        Environment()
+        NewSpec().Environment()
         s := &Swarm{}
 
         exp := "http://maven.jenkins-ci.org/content/repositories/releases/org/jenkins-ci/plugins/swarm-client/1.15/swarm-client-1.15-jar-with-dependencies.jar"
@@ -47,7 +47,7 @@ func TestSwarmCommand(t *testing.T) {
                 "-executors",
                 "2",
         }
-        env, _ := Environment()
+        env, _ := NewSpec().Environment()
         env.Username = "testuser"
         env.Password = "testpass"
         env.Server = "http://test"
