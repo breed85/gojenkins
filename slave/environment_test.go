@@ -5,6 +5,7 @@ import (
         "strconv"
         "strings"
         "testing"
+        "time"
 )
 
 func TestEnvironment(t *testing.T) {
@@ -144,12 +145,50 @@ func TestJson(t *testing.T) {
         // Rewind the reader to the beginning of the buffer.
         r.Seek(0, os.SEEK_SET)
         res, err = s.Json(r)
-
         if err != nil {
                 t.Log("Error: ", err)
                 t.Fail()
         }
         expectBool(t, false, res)
+}
+
+func TestMonitor(t *testing.T) {
+        spec = nil
+        s := NewSpec()
+        name := os.TempDir() + "/TestMonitor.config"
+        f, _ := os.Create(name)
+        defer os.Remove(name)
+        f.Write([]byte(`
+            {
+                "Server": "http://test",
+                "Home": "c:\\jenkins",
+                "Name": "testslave",
+                "Username": "slaveuser",
+                "Password": "slavepass",
+                "Swarm": true,
+                "Swarmversion": "1.16",
+                "Lock": true,
+                "Executors": 8,
+                "Mode": "exclusive",
+                "Labels": "Label1 Label2"
+            }`))
+
+        ch, _ := s.Monitor(name, time.Millisecond*30)
+        expectBool(t, true, <-ch)
+
+        // Check that the Spec is correctly updated
+        expectString(t, "http://test", s.Server)
+        expectString(t, "c:\\jenkins", s.Home)
+        expectString(t, "testslave", s.Name)
+        expectString(t, "slaveuser", s.Username)
+        expectString(t, "slavepass", s.Password)
+        expectBool(t, true, s.Swarm)
+        expectString(t, "1.16", s.Swarmversion)
+        expectBool(t, true, s.Lock)
+        expectInt(t, 8, s.Executors)
+        expectString(t, "exclusive", s.Mode)
+        expectString(t, "Label1 Label2", s.Labels)
+
 }
 
 func expectString(t *testing.T, exp, act string) {

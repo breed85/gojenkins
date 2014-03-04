@@ -7,6 +7,7 @@ import (
         "os"
         "reflect"
         "strings"
+        "time"
 )
 
 // Spec represents the environment.
@@ -114,6 +115,61 @@ func (s *Spec) Json(r io.Reader) (changed bool, err error) {
         }
 
         return
+}
+
+// Monitor watches the file 'name' for changes in the environment. If a change
+// is detected, true is sent on the channel returned and the Spec is
+// updated. Send a bool on the quit channel will stop the monitoring.
+// At least two consecutive errors must occur when attempting to handle the JSON
+// before the routine will panic. This should handle a settings file that is being
+// changed.
+func (s *Spec) Monitor(name string, dur time.Duration) (ch chan bool, quit chan bool) {
+        const MAX_ERR = 2
+        ch = make(chan bool, 1)
+        quit = make(chan bool, 1)
+
+        go func() {
+                // Check for updates every minute
+                t := time.NewTicker(dur)
+                errors := 0
+                for {
+                        select {
+                        case <-t.C:
+                                res, err := s.jsonFile(name)
+                                if err != nil {
+                                        errors++
+                                        if errors >= MAX_ERR {
+                                                panic(err)
+                                        }
+                                }
+                                if res {
+                                        ch <- res
+                                }
+                                errors = 0
+                        case <-quit:
+                                t.Stop()
+                                break
+                        }
+                }
+        }()
+
+        return
+}
+
+// jsonFile opens a file and uses the JSON environment to interpret it's contents
+// and apply them to the spec. Returns the result of running s.Json on the file.
+func (s *Spec) jsonFile(name string) (bool, error) {
+        f, err := os.Open(name)
+        if err != nil {
+                return false, err
+        }
+        defer f.Close()
+
+        res, err := s.Json(f)
+        if err != nil {
+                return false, err
+        }
+        return res, nil
 }
 
 // ValidMode returns true if the mode is 'normal' or 'exclusive'.
