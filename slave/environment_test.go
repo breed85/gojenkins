@@ -3,6 +3,7 @@ package slave
 import (
         "os"
         "strconv"
+        "strings"
         "testing"
 )
 
@@ -86,6 +87,69 @@ func TestEnvironment(t *testing.T) {
         // Cleanup
         spec = nil
         os.Clearenv()
+}
+
+func TestJson(t *testing.T) {
+        spec = nil
+        s := NewSpec()
+
+        // Test bad Json
+        r := strings.NewReader("{ malformed: json")
+        res, err := s.Json(r)
+        if err == nil {
+                t.Log("Expected error on malformed json.")
+                t.Fail()
+        }
+
+        expectBool(t, false, res)
+
+        // Test good Json
+        r = strings.NewReader(`
+            {
+                "Server": "http://test",
+                "Home": "c:\\jenkins",
+                "Name": "testslave",
+                "Username": "slaveuser",
+                "Password": "slavepass",
+                "Swarm": true,
+                "Swarmversion": "1.16",
+                "Lock": true,
+                "Executors": 8,
+                "Mode": "exclusive",
+                "Labels": "Label1 Label2"
+            }`)
+        res, err = s.Json(r)
+        if err != nil {
+                t.Log("Error: ", err)
+                t.Fail()
+        }
+
+        //Expect the result to be true for changed data
+        expectBool(t, true, res)
+
+        // Check that the Spec is correctly updated
+        expectString(t, "http://test", s.Server)
+        expectString(t, "c:\\jenkins", s.Home)
+        expectString(t, "testslave", s.Name)
+        expectString(t, "slaveuser", s.Username)
+        expectString(t, "slavepass", s.Password)
+        expectBool(t, true, s.Swarm)
+        expectString(t, "1.16", s.Swarmversion)
+        expectBool(t, true, s.Lock)
+        expectInt(t, 8, s.Executors)
+        expectString(t, "exclusive", s.Mode)
+        expectString(t, "Label1 Label2", s.Labels)
+
+        // Test for no updates on no changes
+        // Rewind the reader to the beginning of the buffer.
+        r.Seek(0, os.SEEK_SET)
+        res, err = s.Json(r)
+
+        if err != nil {
+                t.Log("Error: ", err)
+                t.Fail()
+        }
+        expectBool(t, false, res)
 }
 
 func expectString(t *testing.T, exp, act string) {

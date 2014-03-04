@@ -1,8 +1,11 @@
 package slave
 
 import (
+        "encoding/json"
         "github.com/kelseyhightower/envconfig"
+        "io"
         "os"
+        "reflect"
         "strings"
 )
 
@@ -69,22 +72,48 @@ var spec *Spec = nil
 // Environment will read in the environment as defined in Spec. All environment variables will be
 // prefixed with "SLAVE_".
 func (s *Spec) Environment() (*Spec, error) {
-        err := envconfig.Process("slave", s)
+        if err := envconfig.Process("slave", s); err != nil {
+                return nil, err
+        }
 
         if !s.ValidMode() {
-                logger.Printf(
-                        "Invalid value for mode [%s]. Valid values are normal and exclusive. Setting to normal.",
-                        s.Mode,
-                )
+                // If the mode is not expected, default it to normal.
                 s.Mode = "normal"
         }
 
-        return s, err
+        return s, nil
 }
 
-// File reads the spec from the file listed as the argument.
-func (s *Spec) File(name string) (*Spec, error) {
-        return nil, nil
+// Json reads the spec from the provided io.Reader and returns true
+// if the underlying spec was updated.
+func (s *Spec) Json(r io.Reader) (changed bool, err error) {
+        changed = false
+        // Decode the JSON.
+        dec := json.NewDecoder(r)
+        tmpSpec := s.copy()
+        err = dec.Decode(tmpSpec)
+        if err != nil {
+                return
+        }
+
+        // Use reflection to compare the original spec to the new one. If data
+        // has changed for a field, update the original spec.
+        tmpValue := reflect.ValueOf(tmpSpec).Elem()
+        specValue := reflect.ValueOf(s).Elem()
+        specType := specValue.Type()
+
+        for i := 0; i < specValue.NumField(); i++ {
+                field := specValue.Field(i)
+                fieldType := specType.Field(i)
+                value := tmpValue.FieldByName(fieldType.Name)
+                if value.Type().AssignableTo(fieldType.Type) && field.CanSet() &&
+                        value.Interface() != field.Interface() {
+                        field.Set(value)
+                        changed = true
+                }
+        }
+
+        return
 }
 
 // ValidMode returns true if the mode is 'normal' or 'exclusive'.
@@ -124,4 +153,10 @@ func NewSpec() *Spec {
                 }
         }
         return spec
+}
+
+func (s *Spec) copy() *Spec {
+        copy := &Spec{}
+        *copy = *s
+        return copy
 }
