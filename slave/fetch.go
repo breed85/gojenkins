@@ -58,7 +58,10 @@ func fetchfn(fn getter, c Connector) error {
 // get retrieves the content at the specified URL. The content will be returned as a []byte.
 // If an error occurs it will be passed back to the caller.
 func get(url string) ([]byte, error) {
-        logger.Printf("GET %s", url)
+        if logger != nil {
+                logger.Printf("GET %s", url)
+        }
+
         resp, err := http.Get(url)
         if err != nil {
                 return nil, err

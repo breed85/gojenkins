@@ -1,8 +1,8 @@
 package slave
 
 import (
+        "io"
         "log"
-        "os"
 )
 
 // Logger supports capturing output from the Jenkins slave process.
@@ -12,8 +12,8 @@ type Logger struct {
 
 var logger *Logger
 
-func init() {
-        logger = &Logger{log.New(os.Stderr, "Slave: ", log.Ldate|log.Ltime|log.Lshortfile)}
+func InitLog(w io.Writer) {
+        logger = &Logger{log.New(w, "Slave: ", log.Ldate|log.Ltime|log.Lshortfile)}
 }
 
 func (l *Logger) Write(p []byte) (n int, err error) {

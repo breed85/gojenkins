@@ -65,13 +65,15 @@ func runslave(c Connector) {
         for {
                 // Setup the command to start Jenkins
                 cmd := c.Command()
-                cmd.Stderr = logger
+                if logger != nil {
+                        cmd.Stderr = logger
+                }
 
                 // Start a timer to determine how long it has run for.
                 start := time.Now()
-                logger.Printf("Executing %s", strings.Join(cmd.Args, " "))
+                printf("Executing %s", strings.Join(cmd.Args, " "))
                 if err := cmd.Start(); err != nil {
-                        logger.Println(err)
+                        print(err)
                 }
 
                 finished := make(chan bool)
@@ -84,14 +86,14 @@ func runslave(c Connector) {
                 case <-finished:
                         // If we ran for a while and shut down unexpectedly, do not try to restart.
                         if time.Since(start) > MIN_EXEC_TIME {
-                                logger.Print("Jenkins shut down unexpectedly, but ran for a decent time. Quitting.")
+                                print("Jenkins shut down unexpectedly, but ran for a decent time. Quitting.")
                                 return
                         }
 
                         // While we have additional attempts left, sleep and attempt to start Jenkins again.
                         if attempts > 0 {
-                                logger.Printf("Jenkins aborted rather quickly. Will try again in %d seconds.", sleep/time.Second)
-                                logger.Printf("%d attempts remaining.", attempts)
+                                printf("Jenkins aborted rather quickly. Will try again in %d seconds.", sleep/time.Second)
+                                printf("%d attempts remaining.", attempts)
                                 attempts--
 
                                 time.Sleep(sleep)
@@ -102,7 +104,7 @@ func runslave(c Connector) {
                                 }
 
                         } else {
-                                logger.Printf("Failed to start Jenkins in %d attempts. Quitting.", INIT_ATTEMPTS)
+                                printf("Failed to start Jenkins in %d attempts. Quitting.", INIT_ATTEMPTS)
                                 return
                         }
                 case res, ok := <-restart:
@@ -113,11 +115,23 @@ func runslave(c Connector) {
                         }
                         if res {
                                 // Got a message to restart
-                                logger.Print("Restarting...")
+                                print("Restarting...")
                                 cmd.Process.Kill()
                                 attempts = INIT_ATTEMPTS
                         }
                 }
 
+        }
+}
+
+func print(v ...interface{}) {
+        if logger != nil {
+                logger.Print(v...)
+        }
+}
+
+func printf(format string, v ...interface{}) {
+        if logger != nil {
+                logger.Printf(format, v...)
         }
 }

@@ -21,6 +21,8 @@ func TestEnvironment(t *testing.T) {
                 executors    = 4
                 mode         = "exclusive"
                 labels       = "label1 label2"
+                file         = "file.config"
+                log          = "file.log"
         )
 
         // Test defaults
@@ -55,6 +57,8 @@ func TestEnvironment(t *testing.T) {
         os.Setenv(ENV_EXECUTORS, strconv.Itoa(executors))
         os.Setenv(ENV_MODE, mode)
         os.Setenv(ENV_LABELS, labels)
+        os.Setenv(ENV_FILE, file)
+        os.Setenv(ENV_LOG, log)
 
         s, err = NewSpec().Environment()
         if nil != err {
@@ -72,6 +76,8 @@ func TestEnvironment(t *testing.T) {
         expectInt(t, executors, s.Executors)
         expectString(t, mode, s.Mode)
         expectString(t, labels, s.Labels)
+        expectString(t, file, s.File)
+        expectString(t, log, s.Log)
 
         // Test mode wrong
         os.Clearenv()
@@ -117,7 +123,8 @@ func TestJson(t *testing.T) {
                 "Lock": true,
                 "Executors": 8,
                 "Mode": "exclusive",
-                "Labels": "Label1 Label2"
+                "Labels": "Label1 Label2",
+                "Log": "file.log"
             }`)
         res, err = s.Json(r)
         if err != nil {
@@ -140,6 +147,7 @@ func TestJson(t *testing.T) {
         expectInt(t, 8, s.Executors)
         expectString(t, "exclusive", s.Mode)
         expectString(t, "Label1 Label2", s.Labels)
+        expectString(t, "file.log", s.Log)
 
         // Test for no updates on no changes
         // Rewind the reader to the beginning of the buffer.
@@ -170,11 +178,22 @@ func TestMonitor(t *testing.T) {
                 "Lock": true,
                 "Executors": 8,
                 "Mode": "exclusive",
-                "Labels": "Label1 Label2"
+                "Labels": "Label1 Label2",
+                "Log": "file.log"
             }`))
 
+        tick := time.Tick(time.Second)
+
         ch := s.Monitor(name, time.Millisecond*30)
-        expectBool(t, true, <-ch)
+
+        // We need a response within 1 second.
+        select {
+        case <-tick:
+                t.Log("Monitor timed out")
+                t.Fail()
+        case c := <-ch:
+                expectBool(t, true, c)
+        }
 
         // Check that the Spec is correctly updated
         expectString(t, "http://test", s.Server)
@@ -188,6 +207,7 @@ func TestMonitor(t *testing.T) {
         expectInt(t, 8, s.Executors)
         expectString(t, "exclusive", s.Mode)
         expectString(t, "Label1 Label2", s.Labels)
+        expectString(t, "file.log", s.Log)
 
         close(ch)
 }

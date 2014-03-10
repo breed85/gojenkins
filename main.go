@@ -102,6 +102,22 @@ func main() {
                 mon = f.Monitor(f.File, time.Minute)
         }
 
+        // Start logging
+        if len(f.Log) > 0 {
+                // Create a log file
+                l, err := os.Create(f.Log)
+                if err != nil {
+                        log.Print("Error: ", err)
+                        exitCode = 2
+                        return
+                }
+                defer l.Close()
+
+                slave.InitLog(l)
+        } else {
+                slave.InitLog(os.Stderr)
+        }
+
         // Launch the slave
         if f.Swarm {
                 go slave.Run(&slave.Swarm{mon}, runError)
@@ -152,4 +168,5 @@ func (f *flags) Load() {
         flag.StringVar(&f.Labels, "labels", f.Labels, "\n\tLabels to apply to the node. Requires -swarm. Can be a space separated list.\n")
         flag.IntVar(&f.Executors, "executors", f.Executors, "\n\tNumber of executors to use for the node. Requires -swarm\n")
         flag.StringVar(&f.File, "file", f.File, "\n\tConfig file to use. The content should be json. The file will be automatically monitored for changes.\n\tAny settings in the file will take precedence over command line flags.\n")
+        flag.StringVar(&f.Log, "log", f.Log, "\n\tLog file to output to. Default is STDERR.\n")
 }

@@ -56,6 +56,9 @@ type Spec struct {
         // File is the name of the config file to load the settings from. This can be used as an
         // alternative to environment variables or command line flags.
         File    string
+
+        // Log is the name of the file to log output to. The file will be truncated with each execution.
+        Log     string
 }
 
 const (
@@ -71,6 +74,7 @@ const (
         ENV_MODE         = "SLAVE_MODE"         // Environment variable
         ENV_LABELS       = "SLAVE_LABELS"       // Environment variable
         ENV_FILE         = "SLAVE_FILE"         // Environment variable
+        ENV_LOG          = "SLAVE_LOG"          // Environment variable
 )
 
 var spec *Spec = nil
