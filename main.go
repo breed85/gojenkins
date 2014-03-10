@@ -7,6 +7,7 @@ import (
         "os"
         "os/signal"
         "stash.jda.com/scm/~j1014191/gojenkins/slave"
+        "time"
 )
 
 var exitCode = 0
@@ -37,7 +38,8 @@ func main() {
         runError := make(chan error, 1)
 
         // Load the environment
-        env, err := slave.Environment()
+        s := slave.NewSpec()
+        env, err := s.Environment()
         if err != nil {
                 log.Print(err)
                 exitCode = 2
@@ -78,11 +80,33 @@ func main() {
 
         }
 
+        var mon chan bool
+        if len(f.File) > 0 {
+                // Read the JSON config first
+                c, err := os.Open(f.File)
+                if err != nil {
+                        log.Printf("Error: %s", err)
+                        exitCode = 2
+                        return
+                }
+                _, err = f.Json(c)
+                if err != nil {
+                        log.Printf("Error: %s", err)
+                        exitCode = 2
+                        c.Close()
+                        return
+                }
+                c.Close()
+
+                // Begin monitoring the config every minute
+                mon = f.Monitor(f.File, time.Minute)
+        }
+
         // Launch the slave
         if f.Swarm {
-                go slave.Run(&slave.Swarm{}, runError)
+                go slave.Run(&slave.Swarm{mon}, runError)
         } else {
-                go slave.Run(&slave.Jnlp{}, runError)
+                go slave.Run(&slave.Jnlp{mon}, runError)
         }
 
         // Wait for the slave to complete or a signal to quit.
@@ -95,6 +119,7 @@ func main() {
                         return
                 }
         case <-quit:
+                close(mon)
         }
 }
 
@@ -126,4 +151,5 @@ func (f *flags) Load() {
         flag.StringVar(&f.Mode, "mode", f.Mode, "\n\tMode to set for the slave node. Valid values are 'normal' (utilize the slave as much as possible)\n\tor 'exclusive' (leave this machine for tied jobs only). Requires -swarm\n")
         flag.StringVar(&f.Labels, "labels", f.Labels, "\n\tLabels to apply to the node. Requires -swarm. Can be a space separated list.\n")
         flag.IntVar(&f.Executors, "executors", f.Executors, "\n\tNumber of executors to use for the node. Requires -swarm\n")
+        flag.StringVar(&f.File, "file", f.File, "\n\tConfig file to use. The content should be json. The file will be automatically monitored for changes.\n\tAny settings in the file will take precedence over command line flags.\n")
 }

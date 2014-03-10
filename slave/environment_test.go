@@ -173,7 +173,7 @@ func TestMonitor(t *testing.T) {
                 "Labels": "Label1 Label2"
             }`))
 
-        ch, _ := s.Monitor(name, time.Millisecond*30)
+        ch := s.Monitor(name, time.Millisecond*30)
         expectBool(t, true, <-ch)
 
         // Check that the Spec is correctly updated
@@ -189,6 +189,7 @@ func TestMonitor(t *testing.T) {
         expectString(t, "exclusive", s.Mode)
         expectString(t, "Label1 Label2", s.Labels)
 
+        close(ch)
 }
 
 func expectString(t *testing.T, exp, act string) {

@@ -22,6 +22,9 @@ type Connector interface {
 
         // Command builds an exec.Cmd object that will be run to start the slave.
         Command() *exec.Cmd
+
+        // Restart provides a channel to listen for a restart
+        Restart() chan bool
 }
 
 // Run will move execution to the Jenkins working directory as defined in the environment.
@@ -57,6 +60,7 @@ const (
 func runslave(c Connector) {
         attempts := INIT_ATTEMPTS
         sleep := INIT_SLEEP
+        restart := c.Restart()
 
         for {
                 // Setup the command to start Jenkins
@@ -66,32 +70,54 @@ func runslave(c Connector) {
                 // Start a timer to determine how long it has run for.
                 start := time.Now()
                 logger.Printf("Executing %s", strings.Join(cmd.Args, " "))
-                if err := cmd.Run(); err != nil {
+                if err := cmd.Start(); err != nil {
                         logger.Println(err)
                 }
 
-                // If we ran for a while and shut down unexpectedly, do not try to restart.
-                if time.Since(start) > MIN_EXEC_TIME {
-                        logger.Print("Jenkins shut down unexpectedly, but ran for a decent time. Quitting.")
-                        return
-                }
+                finished := make(chan bool)
+                go func() {
+                        cmd.Wait()
+                        finished <- true
+                }()
 
-                // While we have additional attempts left, sleep and attempt to start Jenkins again.
-                if attempts > 0 {
-                        logger.Printf("Jenkins aborted rather quickly. Will try again in %d seconds.", sleep/time.Second)
-                        logger.Printf("%d attempts remaining.", attempts)
-                        attempts--
-
-                        time.Sleep(sleep)
-
-                        sleep *= 2
-                        if sleep > MAX_SLEEP {
-                                sleep = MAX_SLEEP
+                select {
+                case <-finished:
+                        // If we ran for a while and shut down unexpectedly, do not try to restart.
+                        if time.Since(start) > MIN_EXEC_TIME {
+                                logger.Print("Jenkins shut down unexpectedly, but ran for a decent time. Quitting.")
+                                return
                         }
 
-                } else {
-                        logger.Printf("Failed to start Jenkins in %d attempts. Quitting.", INIT_ATTEMPTS)
-                        return
+                        // While we have additional attempts left, sleep and attempt to start Jenkins again.
+                        if attempts > 0 {
+                                logger.Printf("Jenkins aborted rather quickly. Will try again in %d seconds.", sleep/time.Second)
+                                logger.Printf("%d attempts remaining.", attempts)
+                                attempts--
+
+                                time.Sleep(sleep)
+
+                                sleep *= 2
+                                if sleep > MAX_SLEEP {
+                                        sleep = MAX_SLEEP
+                                }
+
+                        } else {
+                                logger.Printf("Failed to start Jenkins in %d attempts. Quitting.", INIT_ATTEMPTS)
+                                return
+                        }
+                case res, ok := <-restart:
+                        if !ok {
+                                // The monitor was closed, quit
+                                cmd.Process.Kill()
+                                break
+                        }
+                        if res {
+                                // Got a message to restart
+                                logger.Print("Restarting...")
+                                cmd.Process.Kill()
+                                attempts = INIT_ATTEMPTS
+                        }
                 }
+
         }
 }

@@ -7,7 +7,10 @@ import (
 )
 
 // Swarm is an object that represents a Jenkins swarm client connector for connecting to a Jenkins master.
-type Swarm struct{}
+type Swarm struct {
+        // Ch is a channel to send a value on to force a restart.
+        Ch chan bool
+}
 
 func (s *Swarm) Url() string {
         return fmt.Sprintf("http://maven.jenkins-ci.org/content/repositories/releases/org/jenkins-ci/plugins/swarm-client/%s/%s", spec.Swarmversion, s.File())
@@ -52,4 +55,8 @@ func (s *Swarm) Command() *exec.Cmd {
         )
 
         return exec.Command("java", args...)
+}
+
+func (s *Swarm) Restart() chan bool {
+        return s.Ch
 }

@@ -52,6 +52,10 @@ type Spec struct {
         // Labels can be a whitespace separated string of labels for the node. It only applies if
         // swarm is true.
         Labels  string
+
+        // File is the name of the config file to load the settings from. This can be used as an
+        // alternative to environment variables or command line flags.
+        File    string
 }
 
 const (
@@ -66,6 +70,7 @@ const (
         ENV_EXECUTORS    = "SLAVE_EXECUTORS"    // Environment variable
         ENV_MODE         = "SLAVE_MODE"         // Environment variable
         ENV_LABELS       = "SLAVE_LABELS"       // Environment variable
+        ENV_FILE         = "SLAVE_FILE"         // Environment variable
 )
 
 var spec *Spec = nil
@@ -119,17 +124,16 @@ func (s *Spec) Json(r io.Reader) (changed bool, err error) {
 
 // Monitor watches the file 'name' for changes in the environment. If a change
 // is detected, true is sent on the channel returned and the Spec is
-// updated. Send a bool on the quit channel will stop the monitoring.
+// updated. Close the channel to stop monitoring.
 // At least two consecutive errors must occur when attempting to handle the JSON
 // before the routine will panic. This should handle a settings file that is being
 // changed.
-func (s *Spec) Monitor(name string, dur time.Duration) (ch chan bool, quit chan bool) {
+func (s *Spec) Monitor(name string, dur time.Duration) (ch chan bool) {
         const MAX_ERR = 2
         ch = make(chan bool, 1)
-        quit = make(chan bool, 1)
 
         go func() {
-                // Check for updates every minute
+                // Check for updates every tick
                 t := time.NewTicker(dur)
                 errors := 0
                 for {
@@ -146,9 +150,12 @@ func (s *Spec) Monitor(name string, dur time.Duration) (ch chan bool, quit chan 
                                         ch <- res
                                 }
                                 errors = 0
-                        case <-quit:
-                                t.Stop()
-                                break
+                        case r, ok := <-ch:
+                                if !ok {
+                                        t.Stop()
+                                        break
+                                }
+                                ch <- r
                         }
                 }
         }()

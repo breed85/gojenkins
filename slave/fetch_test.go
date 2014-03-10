@@ -54,6 +54,10 @@ func (f *testFetcher) Command() *exec.Cmd {
         return nil
 }
 
+func (f *testFetcher) Restart() chan bool {
+        return nil
+}
+
 func TestFetchfn(t *testing.T) {
         // Setup environment
         os.Clearenv()
