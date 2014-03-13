@@ -27,7 +27,7 @@ func (s *Swarm) Overwrite() bool {
 func (s *Swarm) Command() *exec.Cmd {
         env, _ := NewSpec().Environment()
 
-        args := []string{"-jar", s.File()}
+        args := []string{"-XX:MaxPermSize=128m", "-jar", s.File()}
 
         if len(env.Username) > 0 {
                 args = append(args, "-username", env.Username)

@@ -30,6 +30,7 @@ func TestSwarmCommand(t *testing.T) {
 
         exp := []string{
                 "java",
+                "-XX:MaxPermSize=128m",
                 "-jar",
                 "swarm-client-1.15-jar-with-dependencies.jar",
                 "-username",
@@ -56,9 +57,14 @@ func TestSwarmCommand(t *testing.T) {
 
         cmd := s.Command()
 
+        if len(cmd.Args) != len(exp) {
+                t.Errorf("Wrong number of args: %d, Exp: %d", len(cmd.Args), len(exp))
+                return
+        }
+
         for i, v := range cmd.Args {
                 if v != exp[i] {
-                        t.Logf("Expected: %s, Got: %s", exp[i], v)
+                        t.Errorf("Expected: %s, Got: %s", exp[i], v)
                 }
         }
 }
