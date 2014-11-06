@@ -6,6 +6,7 @@ Go program for launching a Jenkins slave. Supports JNLP connections or Swarm plu
 
 Usage
 =========
+`
 usage: gojenkins
 
    This command will launch a jenkins slave. Command line options override the environment.
@@ -52,3 +53,4 @@ usage: gojenkins
 
   -username="":
 	Username to log into the jenkins system. Requires -swarm
+`
