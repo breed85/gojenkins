@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"stash.jda.com/scm/~j1014191/gojenkins/slave"
+	"github.com/breed85/gojenkins/slave"
 )
 
 var exitCode = 0
