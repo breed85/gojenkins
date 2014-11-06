@@ -1,0 +1,1 @@
+SLAVE_HOME=. SLAVE_SWARM=true SLAVE_SERVER=http://localhost:8080/ SLAVE_LOG="test.log" go run main.go 
