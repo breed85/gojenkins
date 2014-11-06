@@ -3,7 +3,7 @@ all: test win64 linux64
 BIN=${GOPATH}/bin
 
 test:
-	go test stash.jda.com/scm/~j1014191/gojenkins/slave
+	go test github.com/breed85/gojenkins/slave
 
 win64:
 	mkdir -p $(BIN)
